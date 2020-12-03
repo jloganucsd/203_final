@@ -11,10 +11,8 @@ SET
     r.yelp_review_count = toInteger(row.review_count),
     r.yelp_rating = toFloat(row.rating),
     r.coordinate = point({longitude: toFloat(row.coordinates_longitude), latitude: toFloat(row.coordinates_latitude)}),
-    r.price = row.price,
+    r.price_range = row.price,
     r.address = coalesce(row.location_address1, '') + coalesce(' ' + row.location_address2, '') + coalesce(' ' + row.location_address3, ''),
-    r.neighborhood = row.neighborhood,
-    r.city = row.city,
     r.county = row.county,
     r.state = row.state,
     r.zip_code = toInteger(row.postal_code),
@@ -25,21 +23,24 @@ WHERE
     row.city <> ''
 MERGE
     (c:City {name: row.city})
-WITH row, r, c
+MERGE
+    (r)-[e1:Located_In]->(c)
+WITH row, r, c, e1
 WHERE
     row.neighborhood <> ''
 MERGE
     (n:Neighborhood {name: row.neighborhood})
 MERGE
-    (n)-[e1:In]->(c)
+    (n)-[e2:Located_In]->(c)
 MERGE
-    (r)-[e2:In]->(n)
+    (r)-[e3:Located_In]->(n)
 RETURN
     count(r) as Restaurant_Yelp,
     count(distinct n) as Neighborhood_Yelp,
     count(distinct c) as City_Yelp,
     count(e1) as In_relationship_1,
-    count(e2) as In_relationship_2;
+    count(e2) as In_relationship_2,
+    count(e3) as In_relationship_3;
 
 // ----------------------------------------------
 // Update restaurant nodes with matching data
@@ -66,10 +67,8 @@ ON CREATE SET
     r.google_review_count = toInteger(row.user_ratings_total),
     r.google_rating = toFloat(row.rating),
     r.coordinate = point({longitude: toFloat(row.geometry_location_lng), latitude: toFloat(row.geometry_location_lat)}),
-    r.price = toFloat(row.price_level),
+    r.price_range = toFloat(row.price_level),
     r.address = row.formatted_address,
-    r.neighborhood = row.neighborhood,
-    r.city = row.city,
     r.county = row.county,
     r.state = row.state,
     r.zip_code = toInteger(row.postal_code),
@@ -84,21 +83,24 @@ WHERE
     row.city <> ''
 MERGE
     (c:City {name: row.city})
-WITH row, r, c
+MERGE
+    (r)-[e1:Located_In]->(c)
+WITH row, r, c, e1
 WHERE
     row.neighborhood <> ''
 MERGE
     (n:Neighborhood {name: row.neighborhood})
 MERGE
-    (n)-[e1:In]->(c)
+    (n)-[e2:Located_In]->(c)
 MERGE
-    (r)-[e2:In]->(n)
+    (r)-[e3:Located_In]->(n)
 RETURN
-    count(r) as Restaurant_Google,
-    count(distinct n) as Neighborhood_Google,
-    count(distinct c) as City_Google,
+    count(r) as Restaurant_Yelp,
+    count(distinct n) as Neighborhood_Yelp,
+    count(distinct c) as City_Yelp,
     count(e1) as In_relationship_1,
-    count(e2) as In_relationship_2;
+    count(e2) as In_relationship_2,
+    count(e3) as In_relationship_3;
 
 // ----------------------------------------------
 // Insert attraction nodes with Yelp data
@@ -113,17 +115,24 @@ SET
     r.yelp_review_count = toInteger(row.review_count),
     r.yelp_rating = toFloat(row.rating),
     r.coordinate = point({longitude: toFloat(row.coordinates_longitude), latitude: toFloat(row.coordinates_latitude)}),
-    r.price = row.price,
+    r.price_range = row.price,
     r.address = coalesce(row.location_address1, '') + coalesce(' ' + row.location_address2, '') + coalesce(' ' + row.location_address3, ''),
-    r.neighborhood = row.neighborhood,
-    r.city = row.location_city,
     r.county = row.county,
     r.state = row.location_state,
     r.zip_code = toInteger(row.location_zip_code),
     r.country = row.location_country,
     r.phone = toInteger(row.phone)
+WITH row, r
+WHERE
+    row.location_city <> ''
+MERGE
+    (c:City {name: row.location_city})
+MERGE
+    (r)-[e1:Located_In]->(c)
 RETURN
-    count(r) as Attraction_Yelp;
+    count(r) as Attraction_Yelp,
+    count(c) as City_Yelp,
+    count(e1) as In_relationship_1;
 
 // ----------------------------------------------
 // Insert hotel nodes with Yelp data
@@ -138,17 +147,24 @@ SET
     r.yelp_review_count = toInteger(row.review_count),
     r.yelp_rating = toFloat(row.rating),
     r.coordinate = point({longitude: toFloat(row.coordinates_longitude), latitude: toFloat(row.coordinates_latitude)}),
-    r.price = row.price,
+    r.price_range = row.price,
     r.address = coalesce(row.location_address1, '') + coalesce(' ' + row.location_address2, '') + coalesce(' ' + row.location_address3, ''),
-    r.neighborhood = row.neighborhood,
-    r.city = row.location_city,
     r.county = row.county,
     r.state = row.location_state,
     r.zip_code = toInteger(row.location_zip_code),
     r.country = row.location_country,
     r.phone = toInteger(row.phone)
+WITH row, r
+WHERE
+    row.location_city <> ''
+MERGE
+    (c:City {name: row.location_city})
+MERGE
+    (r)-[e1:Located_In]->(c)
 RETURN
-    count(r) as Hotel_Yelp;
+    count(r) as Hotel_Yelp,
+    count(c) as City_Yelp,
+    count(e1) as In_relationship_1;
 
 // ----------------------------------------------
 // Insert restaurant review nodes with Yelp data

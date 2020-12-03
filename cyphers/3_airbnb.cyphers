@@ -10,7 +10,7 @@ CALL apoc.load.json('FILE:///airbnb_listings.json')
 YIELD value
 MERGE (r:Rental {id: value.id})
 MERGE (c:City {name: value.city})
-MERGE (r)-[:In]->(c)
+MERGE (r)-[:Located_In]->(c)
 SET r.type_id = value.property_type_id,
     r.tier_id = value.tier_id,
     r.name = value.name,
@@ -26,8 +26,8 @@ SET r.type_id = value.property_type_id,
 WITH value, r, c
 UNWIND value.neighborhood AS neighborhood
 MERGE (n:Neighborhood {name: neighborhood})
-MERGE (r)-[:In]->(n)
-MERGE (n)-[:In]->(c)
+MERGE (r)-[:Located_In]->(n)
+MERGE (n)-[:Located_In]->(c)
 RETURN count(r) AS Rental, count(n) AS Neighborhood, count(c) AS City;
 
 // insert Airbnb reviews and connect to listings
